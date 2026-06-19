@@ -20,6 +20,7 @@ export const detectHighRefund = (pkg: PackageCategory): AnomalyAlert | null => {
       suggestedAction: '建议立即与负责医生沟通，检查操作流程和咨询师术前沟通环节。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   
@@ -34,6 +35,7 @@ export const detectHighRefund = (pkg: PackageCategory): AnomalyAlert | null => {
       suggestedAction: '建议关注该套餐的客户反馈，了解退款原因。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   
@@ -63,6 +65,7 @@ export const detectLowConversion = (
       suggestedAction: '检查该时段咨询师排班，或调整预约策略，确保有经验的咨询师在岗。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   
@@ -80,6 +83,7 @@ export const detectMissedCharge = (missedCount: number, totalAmount: number): An
       suggestedAction: '立即培训前台和医生在结算时确认项目，加强收费流程管控，建议使用双人核对制度。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   
@@ -93,6 +97,7 @@ export const detectMissedCharge = (missedCount: number, totalAmount: number): An
       suggestedAction: '提醒前台注意收费项目核对，建议优化结算流程。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   
@@ -116,6 +121,7 @@ export const detectLowAddon = (
       suggestedAction: '加强咨询师对抛光项目的推荐培训，或考虑调整套餐定价策略。',
       detectedAt: new Date().toISOString(),
       dismissed: false,
+      status: 'open',
     };
   }
   

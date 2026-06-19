@@ -11,6 +11,8 @@ interface StatCardProps {
   icon: React.ReactNode;
   delay?: number;
   isPositiveGood?: boolean;
+  subtitle?: string;
+  subtitleColor?: string;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -21,6 +23,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon,
   delay = 0,
   isPositiveGood = true,
+  subtitle,
+  subtitleColor = 'text-gray-400',
 }) => {
   const animatedValue = useAnimatedNumber(value, { duration: 1200, decimals: unit === 'percent' ? 1 : 0 });
   const trendIcon = trend !== undefined ? getTrendIcon(trend) : null;
@@ -59,6 +63,9 @@ export const StatCard: React.FC<StatCardProps> = ({
       <p className="text-2xl font-bold text-gray-900 font-mono tracking-tight">
         {formatValue(animatedValue)}
       </p>
+      {subtitle && (
+        <p className={`text-xs mt-1 ${subtitleColor}`}>{subtitle}</p>
+      )}
       {trend !== undefined && (
         <p className="text-xs text-gray-400 mt-1">较昨日</p>
       )}

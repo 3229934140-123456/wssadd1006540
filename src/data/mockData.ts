@@ -237,6 +237,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     suggestedAction: '建议与医生沟通操作流程，或检查咨询师术前沟通是否充分',
     detectedAt: '2026-06-20 08:30',
     dismissed: false,
+    status: 'open',
   },
   {
     id: 'alert-002',
@@ -248,6 +249,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     suggestedAction: '检查该时段咨询师排班，或调整预约策略',
     detectedAt: '2026-06-20 08:30',
     dismissed: false,
+    status: 'open',
   },
   {
     id: 'alert-003',
@@ -259,6 +261,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     suggestedAction: '培训前台和医生在结算时确认项目，加强收费流程管控',
     detectedAt: '2026-06-20 08:00',
     dismissed: false,
+    status: 'open',
   },
   {
     id: 'alert-004',
@@ -270,6 +273,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     suggestedAction: '加强咨询师对抛光项目的推荐培训，或考虑调整套餐定价',
     detectedAt: '2026-06-20 08:30',
     dismissed: false,
+    status: 'open',
   },
   {
     id: 'alert-005',
@@ -282,6 +286,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     suggestedAction: '与李华医生沟通，了解客户退款原因',
     detectedAt: '2026-06-20 08:30',
     dismissed: false,
+    status: 'open',
   },
 ];
 

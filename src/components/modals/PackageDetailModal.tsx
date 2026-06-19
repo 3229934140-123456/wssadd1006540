@@ -24,16 +24,22 @@ const MissedChargeRow: React.FC<{
   onConvertToMessage: (record: MissedChargeRecord) => void;
 }> = ({ record, onConvertToMessage }) => {
   const isUnresolved = record.status === 'unresolved';
+  const isRectifying = record.status === 'rectifying';
+  const isRectified = record.status === 'rectified';
+
+  const getRowBg = () => {
+    if (isUnresolved) return 'bg-red-50/30';
+    if (isRectifying) return 'bg-amber-50/30';
+    return 'bg-green-50/30';
+  };
 
   return (
-    <tr className={`border-b border-gray-50 ${isUnresolved ? 'bg-red-50/30' : 'bg-green-50/30'}`}>
+    <tr className={`border-b border-gray-50 ${getRowBg()}`}>
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
-          {isUnresolved ? (
-            <XCircle className="w-4 h-4 text-red-500" />
-          ) : (
-            <CheckCircle className="w-4 h-4 text-green-500" />
-          )}
+          {isUnresolved && <XCircle className="w-4 h-4 text-red-500" />}
+          {isRectifying && <Clock className="w-4 h-4 text-amber-500" />}
+          {isRectified && <CheckCircle className="w-4 h-4 text-green-500" />}
           <span className="text-sm font-medium text-gray-900">{record.patientName}</span>
         </div>
       </td>
@@ -48,9 +54,11 @@ const MissedChargeRow: React.FC<{
       </td>
       <td className="py-3 px-4">
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-          isUnresolved ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          isUnresolved ? 'bg-red-100 text-red-700' :
+          isRectifying ? 'bg-amber-100 text-amber-700' :
+          'bg-green-100 text-green-700'
         }`}>
-          {isUnresolved ? '未处理' : '已补收'}
+          {isUnresolved ? '未处理' : isRectifying ? '整改中' : '已补收'}
         </span>
       </td>
       <td className="py-3 px-4">
@@ -63,13 +71,19 @@ const MissedChargeRow: React.FC<{
             转整改
           </button>
         )}
+        {isRectifying && (
+          <span className="text-xs text-amber-600 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            已转前台
+          </span>
+        )}
       </td>
     </tr>
   );
 };
 
 export const PackageDetailModal: React.FC = () => {
-  const { selectedPackage, packageDetail, loading, sendMessage } = useDashboardStore();
+  const { selectedPackage, packageDetail, loading, convertMissedChargeToMessage } = useDashboardStore();
   const { showPackageModal, closePackageModal, activeDetailTab, setActiveDetailTab, openMessagePanel, highlightedTimeSlot } = useUIStore();
 
   if (!selectedPackage) return null;
@@ -95,13 +109,15 @@ export const PackageDetailModal: React.FC = () => {
 
   const missedCharges = packageDetail?.missedCharges || [];
   const unresolvedCount = missedCharges.filter(mc => mc.status === 'unresolved').length;
+  const rectifyingCount = missedCharges.filter(mc => mc.status === 'rectifying').length;
+  const rectifiedCount = missedCharges.filter(mc => mc.status === 'rectified').length;
   const totalMissedAmount = missedCharges
-    .filter(mc => mc.status === 'unresolved')
+    .filter(mc => mc.status !== 'rectified')
     .reduce((sum, mc) => sum + mc.missedAmount, 0);
 
   const doctorMissedMap = new Map<string, { name: string; count: number; amount: number }>();
   const consultantMissedMap = new Map<string, { name: string; count: number; amount: number }>();
-  missedCharges.filter(mc => mc.status === 'unresolved').forEach(mc => {
+  missedCharges.filter(mc => mc.status !== 'rectified').forEach(mc => {
     const d = doctorMissedMap.get(mc.doctorId) || { name: mc.doctorName, count: 0, amount: 0 };
     d.count++;
     d.amount += mc.missedAmount;
@@ -115,7 +131,8 @@ export const PackageDetailModal: React.FC = () => {
 
   const handleConvertToMessage = (record: MissedChargeRecord) => {
     const today = new Date().toISOString().split('T')[0];
-    sendMessage(
+    convertMissedChargeToMessage(
+      record.id,
       `[漏收整改] ${record.patientName}的${record.chargeItem}（¥${record.missedAmount}）未收取，请前台核实并补收`,
       'reception',
       today
@@ -391,16 +408,16 @@ export const PackageDetailModal: React.FC = () => {
         <div>
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-              <p className="text-sm text-red-600 mb-1">未处理漏收</p>
+              <p className="text-sm text-red-600 mb-1">未处理</p>
               <p className="text-2xl font-bold text-red-700 font-mono">{unresolvedCount}</p>
             </div>
-            <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-              <p className="text-sm text-red-600 mb-1">涉及金额</p>
-              <p className="text-2xl font-bold text-red-700 font-mono">{formatCurrency(totalMissedAmount)}</p>
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <p className="text-sm text-amber-700 mb-1">整改中</p>
+              <p className="text-2xl font-bold text-amber-700 font-mono">{rectifyingCount}</p>
             </div>
             <div className="p-4 bg-green-50 rounded-xl border border-green-100">
               <p className="text-sm text-green-600 mb-1">已补收</p>
-              <p className="text-2xl font-bold text-green-700 font-mono">{missedCharges.filter(mc => mc.status === 'rectified').length}</p>
+              <p className="text-2xl font-bold text-green-700 font-mono">{rectifiedCount}</p>
             </div>
           </div>
 

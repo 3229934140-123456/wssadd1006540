@@ -15,7 +15,7 @@ const SkeletonCard: React.FC = () => (
 );
 
 export const OverviewCards: React.FC = () => {
-  const { overviewStats, viewMode, packages, alerts, messages, loading } = useDashboardStore();
+  const { overviewStats, viewMode, packages, alerts, messages, missedCharges, loading } = useDashboardStore();
 
   const totalTargetSales = packages.reduce((sum, pkg) => sum + pkg.targetSales, 0);
   const totalSales = packages.reduce((sum, pkg) => sum + pkg.sales, 0);
@@ -23,7 +23,9 @@ export const OverviewCards: React.FC = () => {
   const totalRefunds = packages.reduce((sum, pkg) => sum + pkg.refunds, 0);
 
   const pendingMessagesCount = messages.filter(m => m.status === 'pending').length;
-  const missedChargesCount = overviewStats?.totalMissedCharges || 0;
+  const unresolvedMissedCharges = missedCharges.filter(mc => mc.status === 'unresolved').length;
+  const rectifyingMissedCharges = missedCharges.filter(mc => mc.status === 'rectifying').length;
+  const totalMissedChargesDisplay = unresolvedMissedCharges + rectifyingMissedCharges;
   const alertsCount = alerts.length;
 
   if (loading || !overviewStats) {
@@ -108,11 +110,12 @@ export const OverviewCards: React.FC = () => {
     },
     {
       title: '漏收笔数',
-      value: missedChargesCount,
+      value: totalMissedChargesDisplay,
       unit: 'number' as const,
       icon: <AlertTriangle className="w-5 h-5" />,
       delay: 400,
       isPositiveGood: false,
+      subtitle: rectifyingMissedCharges > 0 ? `整改中 ${rectifyingMissedCharges}` : undefined,
     },
     {
       title: '抛光加购率',

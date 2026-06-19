@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Header } from '@/components/shared/Header';
 import { OverviewCards } from '@/components/dashboard/OverviewCards';
+import { TrendChart } from '@/components/dashboard/TrendChart';
 import { PackageStructure } from '@/components/dashboard/PackageStructure';
 import { AlertsPanel } from '@/components/dashboard/AlertsPanel';
 import { MessagePanel } from '@/components/dashboard/MessagePanel';
@@ -23,6 +24,8 @@ export const Dashboard: React.FC = () => {
         {viewMode === 'evening' && <EveningSummary />}
         
         <OverviewCards />
+        
+        <TrendChart />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">

@@ -118,12 +118,18 @@ const AlertCard: React.FC<AlertCardProps> = ({
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${severityBadgeColor}`}
               >
                 {getSeverityLabel(alert.severity)}
               </span>
+              {alert.status === 'processing' && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-sky-100 text-sky-700 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  处理中
+                </span>
+              )}
               <span className="text-xs text-gray-400">{getAlertTypeLabel(alert.type)}</span>
             </div>
             <h3 className="text-sm font-semibold text-gray-900 mb-1">{alert.title}</h3>

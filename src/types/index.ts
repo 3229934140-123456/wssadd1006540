@@ -68,8 +68,9 @@ export interface MissedChargeRecord {
   chargeItem: string;
   missedAmount: number;
   detectedAt: string;
-  status: 'unresolved' | 'rectified';
+  status: 'unresolved' | 'rectifying' | 'rectified';
   rectifiedAt?: string;
+  relatedMessageId?: string;
 }
 
 export interface PackageDetail {
@@ -95,9 +96,11 @@ export interface AnomalyAlert {
   suggestedAction?: string;
   detectedAt: string;
   dismissed: boolean;
+  status: 'open' | 'processing' | 'resolved';
+  relatedMessageId?: string;
 }
 
-export type TargetRole = 'reception' | 'consultant' | 'all';
+export type TargetRole = 'reception' | 'consultant' | 'doctor' | 'all';
 export type MessageStatus = 'pending' | 'completed';
 
 export interface MessageMetric {
