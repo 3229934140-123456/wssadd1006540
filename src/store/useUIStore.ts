@@ -8,6 +8,7 @@ interface UIState {
   activeDetailTab: DetailTab;
   expandedAlertId: string | null;
   expandedMessageId: string | null;
+  highlightedTimeSlot: string | null;
 
   toggleMessagePanel: () => void;
   openMessagePanel: () => void;
@@ -15,9 +16,10 @@ interface UIState {
   openPackageModal: () => void;
   closePackageModal: () => void;
   setActiveDetailTab: (tab: DetailTab) => void;
-  openPackageDetailWithTab: (packageId: string, tab: DetailTab) => void;
+  openPackageDetailWithTab: (packageId: string, tab: DetailTab, highlightedTimeSlot?: string) => void;
   toggleAlert: (alertId: string) => void;
   toggleMessage: (messageId: string) => void;
+  clearHighlightedTimeSlot: () => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -26,6 +28,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   activeDetailTab: 'doctors',
   expandedAlertId: null,
   expandedMessageId: null,
+  highlightedTimeSlot: null,
 
   toggleMessagePanel: () => {
     set((state) => ({ showMessagePanel: !state.showMessagePanel }));
@@ -44,15 +47,18 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
 
   closePackageModal: () => {
-    set({ showPackageModal: false, activeDetailTab: 'doctors' });
+    set({ showPackageModal: false, activeDetailTab: 'doctors', highlightedTimeSlot: null });
   },
 
   setActiveDetailTab: (tab) => {
     set({ activeDetailTab: tab });
+    if (tab !== 'timeslots') {
+      set({ highlightedTimeSlot: null });
+    }
   },
 
-  openPackageDetailWithTab: (packageId, tab) => {
-    set({ showPackageModal: true, activeDetailTab: tab });
+  openPackageDetailWithTab: (packageId, tab, highlightedTimeSlot) => {
+    set({ showPackageModal: true, activeDetailTab: tab, highlightedTimeSlot: highlightedTimeSlot || null });
   },
 
   toggleAlert: (alertId) => {
@@ -63,5 +69,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   toggleMessage: (messageId) => {
     const current = get().expandedMessageId;
     set({ expandedMessageId: current === messageId ? null : messageId });
+  },
+
+  clearHighlightedTimeSlot: () => {
+    set({ highlightedTimeSlot: null });
   },
 }));

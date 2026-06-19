@@ -19,6 +19,7 @@ export const overviewStats: OverviewStats = {
   packageDeals: 22,
   avgOrderValue: 586,
   polishAddRate: 45,
+  totalMissedCharges: 5,
   comparedYesterday: {
     appointmentCount: 8,
     actualArrival: 5,

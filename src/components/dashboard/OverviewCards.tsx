@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarCheck, Users, CreditCard, DollarSign, Sparkles, Target, AlertTriangle, RotateCcw } from 'lucide-react';
+import { CalendarCheck, Users, CreditCard, DollarSign, Sparkles, Target, AlertTriangle, RotateCcw, Clock } from 'lucide-react';
 import { StatCard } from '@/components/shared/StatCard';
 import { useDashboardStore } from '@/store/useDashboardStore';
 
@@ -15,15 +15,16 @@ const SkeletonCard: React.FC = () => (
 );
 
 export const OverviewCards: React.FC = () => {
-  const { overviewStats, viewMode, packages, loading } = useDashboardStore();
+  const { overviewStats, viewMode, packages, alerts, messages, loading } = useDashboardStore();
 
   const totalTargetSales = packages.reduce((sum, pkg) => sum + pkg.targetSales, 0);
   const totalSales = packages.reduce((sum, pkg) => sum + pkg.sales, 0);
   const targetCompletionRate = totalTargetSales > 0 ? Math.round((totalSales / totalTargetSales) * 100) : 0;
   const totalRefunds = packages.reduce((sum, pkg) => sum + pkg.refunds, 0);
-  const totalMissedCharges = packages.reduce((sum, pkg) => {
-    return sum + Math.floor(Math.random() * 2);
-  }, 0);
+
+  const pendingMessagesCount = messages.filter(m => m.status === 'pending').length;
+  const missedChargesCount = overviewStats?.totalMissedCharges || 0;
+  const alertsCount = alerts.length;
 
   if (loading || !overviewStats) {
     return (
@@ -56,7 +57,7 @@ export const OverviewCards: React.FC = () => {
     },
     {
       title: '异常提醒',
-      value: 5,
+      value: alertsCount,
       unit: 'number' as const,
       icon: <AlertTriangle className="w-5 h-5" />,
       delay: 300,
@@ -72,9 +73,9 @@ export const OverviewCards: React.FC = () => {
     },
     {
       title: '待执行留言',
-      value: 2,
+      value: pendingMessagesCount,
       unit: 'number' as const,
-      icon: <CreditCard className="w-5 h-5" />,
+      icon: <Clock className="w-5 h-5" />,
       delay: 500,
       isPositiveGood: false,
     },
@@ -107,7 +108,7 @@ export const OverviewCards: React.FC = () => {
     },
     {
       title: '漏收笔数',
-      value: 4,
+      value: missedChargesCount,
       unit: 'number' as const,
       icon: <AlertTriangle className="w-5 h-5" />,
       delay: 400,

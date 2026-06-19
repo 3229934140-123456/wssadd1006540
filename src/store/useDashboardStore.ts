@@ -105,6 +105,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       packageDeals: Math.round(mockOverview.packageDeals * multiplier),
       avgOrderValue: Math.round(mockOverview.avgOrderValue * (1 + (Math.random() - 0.5) * 0.1)),
       polishAddRate: Math.round(mockOverview.polishAddRate * (1 + (Math.random() - 0.5) * 0.2)),
+      totalMissedCharges: Math.max(0, Math.round(mockOverview.totalMissedCharges * multiplier + (Math.random() - 0.5) * 2)),
       comparedYesterday: {
         appointmentCount: Math.round((Math.random() - 0.3) * 10),
         actualArrival: Math.round((Math.random() - 0.3) * 8),

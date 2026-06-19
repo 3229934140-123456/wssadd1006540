@@ -4,6 +4,7 @@ export interface OverviewStats {
   packageDeals: number;
   avgOrderValue: number;
   polishAddRate: number;
+  totalMissedCharges: number;
   comparedYesterday: {
     appointmentCount: number;
     actualArrival: number;

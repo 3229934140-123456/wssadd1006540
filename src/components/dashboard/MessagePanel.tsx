@@ -384,16 +384,30 @@ const MessageCard: React.FC<MessageCardProps> = ({
 };
 
 export const MessagePanel: React.FC = () => {
-  const { messages, sendMessage, completeMessage } = useDashboardStore();
+  const { messages, sendMessage, completeMessage, currentDate } = useDashboardStore();
   const { showMessagePanel, toggleMessagePanel, expandedMessageId, toggleMessage } =
     useUIStore();
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<'today' | 'all'>('today');
+
+  const dateStr = currentDate.toISOString().split('T')[0];
+
+  const filteredMessages = filterMode === 'today'
+    ? messages.filter(m => m.expectedDate === dateStr)
+    : messages;
 
   const pendingCount = messages.filter((m) => m.status === 'pending').length;
   const completedCount = messages.filter((m) => m.status === 'completed').length;
   const overdueCount = messages.filter((m) => {
     if (m.status === 'completed') return false;
     return new Date(m.expectedDate) < new Date(new Date().toISOString().split('T')[0]);
+  }).length;
+
+  const todayPendingCount = filteredMessages.filter((m) => m.status === 'pending').length;
+  const todayCompletedCount = filteredMessages.filter((m) => m.status === 'completed').length;
+  const todayOverdueCount = filteredMessages.filter((m) => {
+    if (m.status === 'completed') return false;
+    return new Date(m.expectedDate) < new Date(dateStr);
   }).length;
 
   const handleSend = (content: string, targetRole: TargetRole, expectedDate: string) => {
@@ -427,39 +441,72 @@ export const MessagePanel: React.FC = () => {
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3 text-amber-500" />
-                  待执行 {pendingCount}
+                  待执行 {todayPendingCount}
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-green-500" />
-                  已完成 {completedCount}
+                  已完成 {todayCompletedCount}
                 </span>
-                {overdueCount > 0 && (
+                {todayOverdueCount > 0 && (
                   <span className="flex items-center gap-1 text-red-500">
                     <AlertTriangle className="w-3 h-3" />
-                    逾期 {overdueCount}
+                    逾期 {todayOverdueCount}
                   </span>
                 )}
               </div>
             </div>
-            <button
-              onClick={toggleMessagePanel}
-              className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setFilterMode('today')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    filterMode === 'today'
+                      ? 'bg-white text-teal-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  当日
+                </button>
+                <button
+                  onClick={() => setFilterMode('all')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    filterMode === 'all'
+                      ? 'bg-white text-teal-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  全部
+                </button>
+              </div>
+              <button
+                onClick={toggleMessagePanel}
+                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
 
           <div className="p-4 overflow-y-auto max-h-[calc(75vh-180px)]">
             <MessageInput onSend={handleSend} />
 
+            {filterMode === 'today' && (
+              <div className="mb-3 flex items-center gap-2 text-xs text-gray-500">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>显示期望完成日期为 <span className="font-medium text-gray-700">{dateStr}</span> 的指令</span>
+              </div>
+            )}
+
             <div className="space-y-3">
-              {messages.length === 0 ? (
+              {filteredMessages.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">暂无留言</p>
+                  <p className="text-sm text-gray-400">
+                    {filterMode === 'today' ? '当日暂无指令' : '暂无留言'}
+                  </p>
                 </div>
               ) : (
-                messages.map((message) => (
+                filteredMessages.map((message) => (
                   <MessageCard
                     key={message.id}
                     message={message}

@@ -4,11 +4,12 @@ import { OverviewCards } from '@/components/dashboard/OverviewCards';
 import { PackageStructure } from '@/components/dashboard/PackageStructure';
 import { AlertsPanel } from '@/components/dashboard/AlertsPanel';
 import { MessagePanel } from '@/components/dashboard/MessagePanel';
+import { EveningSummary } from '@/components/dashboard/EveningSummary';
 import { PackageDetailModal } from '@/components/modals/PackageDetailModal';
 import { useDashboardStore } from '@/store/useDashboardStore';
 
 export const Dashboard: React.FC = () => {
-  const { fetchData } = useDashboardStore();
+  const { fetchData, viewMode } = useDashboardStore();
 
   useEffect(() => {
     fetchData();
@@ -19,6 +20,8 @@ export const Dashboard: React.FC = () => {
       <Header />
       
       <main className="max-w-[1600px] mx-auto px-6 py-6">
+        {viewMode === 'evening' && <EveningSummary />}
+        
         <OverviewCards />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

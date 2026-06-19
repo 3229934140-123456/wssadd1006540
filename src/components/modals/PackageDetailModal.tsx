@@ -70,7 +70,7 @@ const MissedChargeRow: React.FC<{
 
 export const PackageDetailModal: React.FC = () => {
   const { selectedPackage, packageDetail, loading, sendMessage } = useDashboardStore();
-  const { showPackageModal, closePackageModal, activeDetailTab, setActiveDetailTab, openMessagePanel } = useUIStore();
+  const { showPackageModal, closePackageModal, activeDetailTab, setActiveDetailTab, openMessagePanel, highlightedTimeSlot } = useUIStore();
 
   if (!selectedPackage) return null;
 
@@ -335,19 +335,29 @@ export const PackageDetailModal: React.FC = () => {
               <tbody>
                 {packageDetail?.timeSlots.map((slot) => {
                   const isLowConversion = slot.dealRate < 60 && slot.appointments >= 2;
+                  const isHighlighted = highlightedTimeSlot === slot.time;
                   return (
                     <tr
                       key={slot.time}
-                      className={`border-b border-gray-50 hover:bg-gray-50 ${
-                        isLowConversion ? 'bg-amber-50' : ''
+                      className={`border-b border-gray-50 hover:bg-gray-50 transition-all duration-300 ${
+                        isHighlighted
+                          ? 'bg-sky-50/80 border-x-2 border-sky-400'
+                          : isLowConversion
+                          ? 'bg-amber-50'
+                          : ''
                       }`}
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
+                          <Clock className={`w-4 h-4 ${isHighlighted ? 'text-sky-500' : 'text-gray-400'}`} />
                           <span className="font-medium text-gray-900">{slot.time}</span>
                           {isLowConversion && (
                             <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          )}
+                          {isHighlighted && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 font-medium">
+                              关联异常
+                            </span>
                           )}
                         </div>
                       </td>

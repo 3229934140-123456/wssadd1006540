@@ -220,11 +220,16 @@ export const AlertsPanel: React.FC = () => {
     openPackageDetailWithTab(packageId, tab as any);
   };
 
-  const handleNavigateTimeSlot = (timeSlot: string) => {
+  const handleNavigateTimeSlot = (timeSlot: string, alert: AnomalyAlert) => {
+    if (alert.relatedPackage) {
+      selectPackageById(alert.relatedPackage, 'timeslots');
+      openPackageDetailWithTab(alert.relatedPackage, 'timeslots', timeSlot);
+      return;
+    }
     const pkgWithSlot = packages.find(p => p.id === 'pkg-001');
     if (pkgWithSlot) {
       selectPackageById(pkgWithSlot.id, 'timeslots');
-      openPackageDetailWithTab(pkgWithSlot.id, 'timeslots');
+      openPackageDetailWithTab(pkgWithSlot.id, 'timeslots', timeSlot);
     }
   };
 
@@ -302,7 +307,7 @@ export const AlertsPanel: React.FC = () => {
               onToggle={() => toggleAlert(alert.id)}
               onDismiss={() => dismissAlert(alert.id)}
               onNavigatePackage={handleNavigatePackage}
-              onNavigateTimeSlot={handleNavigateTimeSlot}
+              onNavigateTimeSlot={(timeSlot) => handleNavigateTimeSlot(timeSlot, alert)}
               onConvertToMessage={handleConvertToMessage}
             />
           ))}
