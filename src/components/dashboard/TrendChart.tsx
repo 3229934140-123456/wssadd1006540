@@ -32,14 +32,14 @@ export const TrendChart: React.FC = () => {
 
   const handleBarClick = (data: any) => {
     if (data?.dateStr) {
-      const clickedDate = new Date(data.dateStr);
+      const clickedDate = new Date(data.dateStr + 'T00:00:00');
       setCurrentDate(clickedDate);
     }
   };
 
   const chartData = trendData.map(item => ({
     ...item,
-    isToday: item.dateStr === todayStr,
+    isSelected: item.dateStr === todayStr,
   }));
 
   return (
@@ -126,7 +126,7 @@ export const TrendChart: React.FC = () => {
                 <Cell
                   key={`cell-${index}`}
                   fill={metricConfig[selectedMetric].color}
-                  fillOpacity={entry.isToday ? 1 : 0.6}
+                  fillOpacity={entry.isSelected ? 1 : 0.6}
                 />
               ))}
             </Bar>
@@ -137,11 +137,11 @@ export const TrendChart: React.FC = () => {
       <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-50">
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <div className="w-3 h-3 rounded-sm bg-teal-600" style={{ opacity: 1 }} />
-          <span>今日</span>
+          <span>选中日期</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <div className="w-3 h-3 rounded-sm bg-gray-400" style={{ opacity: 0.4 }} />
-          <span>历史日期</span>
+          <span>其他日期</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Calendar className="w-3 h-3" />

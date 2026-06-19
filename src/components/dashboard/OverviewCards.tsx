@@ -23,9 +23,10 @@ export const OverviewCards: React.FC = () => {
   const totalRefunds = packages.reduce((sum, pkg) => sum + pkg.refunds, 0);
 
   const pendingMessagesCount = messages.filter(m => m.status === 'pending').length;
-  const unresolvedMissedCharges = missedCharges.filter(mc => mc.status === 'unresolved').length;
-  const rectifyingMissedCharges = missedCharges.filter(mc => mc.status === 'rectifying').length;
-  const totalMissedChargesDisplay = unresolvedMissedCharges + rectifyingMissedCharges;
+  const unresolvedMC = missedCharges.filter(mc => mc.status === 'unresolved').length;
+  const rectifyingMC = missedCharges.filter(mc => mc.status === 'rectifying').length;
+  const rectifiedMC = missedCharges.filter(mc => mc.status === 'rectified').length;
+  const activeMissedCharges = unresolvedMC + rectifyingMC;
   const alertsCount = alerts.length;
 
   if (loading || !overviewStats) {
@@ -41,7 +42,17 @@ export const OverviewCards: React.FC = () => {
     );
   }
 
-  const morningCards = [
+  const morningCards: Array<{
+    title: string;
+    value: number;
+    unit: 'number' | 'currency' | 'percent';
+    trend?: number;
+    icon: React.ReactNode;
+    delay: number;
+    isPositiveGood?: boolean;
+    subtitle?: string;
+    subtitleColor?: string;
+  }> = [
     {
       title: '预约人数',
       value: overviewStats.appointmentCount,
@@ -83,7 +94,17 @@ export const OverviewCards: React.FC = () => {
     },
   ];
 
-  const eveningCards = [
+  const eveningCards: Array<{
+    title: string;
+    value: number;
+    unit: 'number' | 'currency' | 'percent';
+    trend?: number;
+    icon: React.ReactNode;
+    delay: number;
+    isPositiveGood?: boolean;
+    subtitle?: string;
+    subtitleColor?: string;
+  }> = [
     {
       title: '套餐成交',
       value: overviewStats.packageDeals,
@@ -109,13 +130,14 @@ export const OverviewCards: React.FC = () => {
       isPositiveGood: false,
     },
     {
-      title: '漏收笔数',
-      value: totalMissedChargesDisplay,
+      title: '漏收',
+      value: activeMissedCharges,
       unit: 'number' as const,
       icon: <AlertTriangle className="w-5 h-5" />,
       delay: 400,
       isPositiveGood: false,
-      subtitle: rectifyingMissedCharges > 0 ? `整改中 ${rectifyingMissedCharges}` : undefined,
+      subtitle: `${unresolvedMC}未处理 / ${rectifyingMC}整改中 / ${rectifiedMC}已补收`,
+      subtitleColor: unresolvedMC > 0 ? 'text-red-500' : rectifyingMC > 0 ? 'text-amber-500' : 'text-gray-400',
     },
     {
       title: '抛光加购率',
@@ -152,6 +174,8 @@ export const OverviewCards: React.FC = () => {
             icon={card.icon}
             delay={card.delay}
             isPositiveGood={card.isPositiveGood}
+            subtitle={card.subtitle}
+            subtitleColor={card.subtitleColor}
           />
         ))}
       </div>

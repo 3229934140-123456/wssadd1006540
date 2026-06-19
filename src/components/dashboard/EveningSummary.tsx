@@ -16,10 +16,15 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCcw,
+  ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { useUIStore } from '@/store/useUIStore';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
+import type { MissedChargeRecord, AnomalyAlert, ManagerMessage } from '@/types';
+import type { DetailTab } from '@/store/useUIStore';
 
 type RoleType = 'reception' | 'consultant' | 'doctor';
 
@@ -60,10 +65,12 @@ export const EveningSummary: React.FC = () => {
     hasTomorrowTodos,
     selectPackageById,
   } = useDashboardStore();
-  const { openMessagePanel, openPackageDetailWithTab } = useUIStore();
+  const { openMessagePanel, openPackageDetailWithTab, toggleMessage } = useUIStore();
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [expandedRole, setExpandedRole] = useState<RoleType | null>(null);
+  const [showHandover, setShowHandover] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const totalSales = packages.reduce((sum, pkg) => sum + pkg.sales, 0);
   const totalRefunds = packages.reduce((sum, pkg) => sum + pkg.refunds, 0);
@@ -82,32 +89,22 @@ export const EveningSummary: React.FC = () => {
     ? Math.round((todayCompleted / todayMessages.length) * 100)
     : 0;
 
-  const missedChargesCount = overviewStats?.totalMissedCharges || 0;
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
 
-  const unresolvedMissedCharges = missedCharges.filter(mc => mc.status !== 'rectified');
-  const rectifyingMissedCharges = missedCharges.filter(mc => mc.status === 'rectifying');
+  const unresolvedMC = missedCharges.filter(mc => mc.status === 'unresolved');
+  const rectifyingMC = missedCharges.filter(mc => mc.status === 'rectifying');
+  const rectifiedMC = missedCharges.filter(mc => mc.status === 'rectified');
 
-  const receptionIssues = {
-    missedCharges: unresolvedMissedCharges.length,
-    pendingMessages: messages.filter(m => m.targetRole === 'reception' && m.status === 'pending' && m.expectedDate === todayStr).length,
-    total: unresolvedMissedCharges.length + messages.filter(m => m.targetRole === 'reception' && m.status === 'pending' && m.expectedDate === todayStr).length,
-  };
+  const receptionMissedCharges = missedCharges.filter(mc => mc.status !== 'rectified');
+  const receptionPendingMessages = messages.filter(m => m.targetRole === 'reception' && m.status === 'pending' && m.expectedDate === todayStr);
 
-  const consultantIssues = {
-    lowAddonAlerts: alerts.filter(a => a.type === 'low_addon').length,
-    lowConversionAlerts: alerts.filter(a => a.type === 'low_conversion').length,
-    pendingMessages: messages.filter(m => m.targetRole === 'consultant' && m.status === 'pending' && m.expectedDate === todayStr).length,
-    total: alerts.filter(a => a.type === 'low_addon' || a.type === 'low_conversion').length +
-      messages.filter(m => m.targetRole === 'consultant' && m.status === 'pending' && m.expectedDate === todayStr).length,
-  };
+  const consultantLowAddon = alerts.filter(a => a.type === 'low_addon');
+  const consultantLowConversion = alerts.filter(a => a.type === 'low_conversion');
+  const consultantPendingMessages = messages.filter(m => m.targetRole === 'consultant' && m.status === 'pending' && m.expectedDate === todayStr);
 
-  const doctorIssues = {
-    refundAlerts: alerts.filter(a => a.type === 'high_refund').length,
-    missedCharges: unresolvedMissedCharges.length,
-    pendingMessages: messages.filter(m => m.targetRole === 'doctor' && m.status === 'pending' && m.expectedDate === todayStr).length,
-    total: alerts.filter(a => a.type === 'high_refund').length + unresolvedMissedCharges.length,
-  };
+  const doctorRefundAlerts = alerts.filter(a => a.type === 'high_refund');
+  const doctorMissedCharges = missedCharges.filter(mc => mc.status !== 'rectified');
+  const doctorPendingMessages = messages.filter(m => m.targetRole === 'doctor' && m.status === 'pending' && m.expectedDate === todayStr);
 
   const tomorrow = new Date(currentDate);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -129,34 +126,26 @@ export const EveningSummary: React.FC = () => {
       if (firstCritical) {
         const content = `[待办] ${firstCritical.title} - ${firstCritical.suggestedAction || '请优先处理'}`;
         const exists = existingTodos.some(m => m.content.includes(firstCritical.title));
-        if (!exists) {
-          todos.push({ content, role: 'all' });
-        }
+        if (!exists) todos.push({ content, role: 'all' });
       }
     }
 
-    if (missedChargesCount > 0) {
-      const content = `[待办] 今日漏收${missedChargesCount}笔，请前台今日核实处理并反馈结果`;
+    if (unresolvedMC.length > 0 || rectifyingMC.length > 0) {
+      const content = `[待办] 今日漏收未处理${unresolvedMC.length}笔、整改中${rectifyingMC.length}笔，请前台核实处理并反馈结果`;
       const exists = existingTodos.some(m => m.content.includes('漏收') && m.targetRole === 'reception');
-      if (!exists) {
-        todos.push({ content, role: 'reception' });
-      }
+      if (!exists) todos.push({ content, role: 'reception' });
     }
 
     if (refundRate >= 10) {
       const content = `[待办] 今日退款率${refundRate}%，请咨询师团队分析退款原因并制定改善方案`;
       const exists = existingTodos.some(m => m.content.includes('退款率') && m.targetRole === 'consultant');
-      if (!exists) {
-        todos.push({ content, role: 'consultant' });
-      }
+      if (!exists) todos.push({ content, role: 'consultant' });
     }
 
     if (todayOverdue > 0) {
       const content = `[待办] 昨日有${todayOverdue}条指令未完成，请今日跟进并完成补录`;
       const exists = existingTodos.some(m => m.content.includes('未完成') && m.content.includes('跟进'));
-      if (!exists) {
-        todos.push({ content, role: 'all' });
-      }
+      if (!exists) todos.push({ content, role: 'all' });
     }
 
     if (todos.length === 0 && existingTodos.length === 0) {
@@ -180,25 +169,90 @@ export const EveningSummary: React.FC = () => {
     setExpandedRole(expandedRole === role ? null : role);
   };
 
-  const handleViewReceptionDetail = () => {
+  const handleNavigatePackage = (packageId: string, tab: DetailTab) => {
+    selectPackageById(packageId, tab);
+    openPackageDetailWithTab(packageId, tab);
+  };
+
+  const handleNavigateMessage = (msg: ManagerMessage) => {
     openMessagePanel();
+    setTimeout(() => toggleMessage(msg.id), 100);
   };
 
-  const handleViewConsultantDetail = () => {
-    if (alerts.length > 0 && alerts.some(a => a.type === 'low_addon')) {
-      const pkg = packages.find(p => p.id === 'pkg-001');
-      if (pkg) {
-        selectPackageById(pkg.id, 'consultants');
-        openPackageDetailWithTab(pkg.id, 'consultants');
-      }
+  const generateHandoverText = (): string => {
+    const dateLabel = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+    const lines: string[] = [];
+
+    lines.push(`📋 ${dateLabel} 收班交接摘要`);
+    lines.push('═'.repeat(30));
+    lines.push('');
+
+    lines.push(`【经营数据】`);
+    lines.push(`  套餐成交: ${overviewStats?.packageDeals || 0}笔 | 营收: ${formatCurrency(totalRevenue)}`);
+    lines.push(`  退款: ${totalRefunds}笔 (${formatPercent(refundRate)}) | 漏收: 未处理${unresolvedMC.length}笔 / 整改中${rectifyingMC.length}笔 / 已补收${rectifiedMC.length}笔`);
+    lines.push(`  指令执行: ${completionRate}% (${todayCompleted}/${todayMessages.length})`);
+    lines.push('');
+
+    lines.push(`【前台 - ${receptionMissedCharges.length + receptionPendingMessages.length}项】`);
+    if (receptionMissedCharges.length > 0) {
+      receptionMissedCharges.forEach(mc => {
+        const statusTag = mc.status === 'rectifying' ? '[整改中]' : '[未处理]';
+        lines.push(`  ${statusTag} ${mc.patientName} - ${mc.chargeItem} ¥${mc.missedAmount}`);
+      });
     }
+    receptionPendingMessages.forEach(m => {
+      lines.push(`  [待执行] ${m.content}`);
+    });
+    if (receptionMissedCharges.length === 0 && receptionPendingMessages.length === 0) {
+      lines.push('  无异常');
+    }
+    lines.push('');
+
+    lines.push(`【咨询师 - ${consultantLowAddon.length + consultantLowConversion.length + consultantPendingMessages.length}项】`);
+    consultantLowAddon.forEach(a => lines.push(`  [低加购] ${a.title}`));
+    consultantLowConversion.forEach(a => lines.push(`  [低转化] ${a.title}`));
+    consultantPendingMessages.forEach(m => lines.push(`  [待执行] ${m.content}`));
+    if (consultantLowAddon.length === 0 && consultantLowConversion.length === 0 && consultantPendingMessages.length === 0) {
+      lines.push('  无异常');
+    }
+    lines.push('');
+
+    lines.push(`【医生 - ${doctorRefundAlerts.length + doctorMissedCharges.length}项】`);
+    doctorRefundAlerts.forEach(a => lines.push(`  [退款异常] ${a.title}`));
+    doctorMissedCharges.slice(0, 5).forEach(mc => {
+      lines.push(`  [漏收] ${mc.doctorName} - ${mc.patientName} ¥${mc.missedAmount}`);
+    });
+    if (doctorRefundAlerts.length === 0 && doctorMissedCharges.length === 0) {
+      lines.push('  无异常');
+    }
+    lines.push('');
+
+    const tomorrowTodos = messages.filter(m => m.expectedDate === tomorrowStr && m.content.startsWith('[待办]'));
+    lines.push(`【明日待办 - ${tomorrowTodos.length}条】`);
+    if (tomorrowTodos.length > 0) {
+      tomorrowTodos.forEach(m => lines.push(`  · ${m.content}`));
+    } else {
+      lines.push('  尚未生成，请店长点击生成明日待办');
+    }
+
+    return lines.join('\n');
   };
 
-  const handleViewDoctorDetail = () => {
-    const refundAlert = alerts.find(a => a.type === 'high_refund');
-    if (refundAlert?.relatedPackage) {
-      selectPackageById(refundAlert.relatedPackage, 'doctors');
-      openPackageDetailWithTab(refundAlert.relatedPackage, 'doctors');
+  const handleCopyHandover = async () => {
+    const text = generateHandoverText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -216,39 +270,40 @@ export const EveningSummary: React.FC = () => {
             <p className="text-sm text-gray-500">今日经营数据汇总与待办生成</p>
           </div>
         </div>
-        <button
-          onClick={generateTomorrowTodos}
-          disabled={generating}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
-            generated
-              ? 'bg-green-500 text-white'
-              : alreadyGenerated
-              ? 'bg-gray-100 text-gray-600 border border-gray-200'
-              : 'bg-gradient-to-r from-indigo-500 to-sky-500 text-white hover:from-indigo-600 hover:to-sky-600 shadow-md hover:shadow-lg'
-          } disabled:opacity-60 disabled:cursor-not-allowed`}
-        >
-          {generating ? (
-            <>
-              <RefreshCcw className="w-4 h-4 animate-spin" />
-              生成中...
-            </>
-          ) : generated ? (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              已生成明日待办
-            </>
-          ) : alreadyGenerated ? (
-            <>
-              <CheckCircle2 className="w-4 h-4" />
-              明日待办已生成
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              生成明日待办
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHandover(!showHandover)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+              showHandover
+                ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            交接摘要
+          </button>
+          <button
+            onClick={generateTomorrowTodos}
+            disabled={generating}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
+              generated
+                ? 'bg-green-500 text-white'
+                : alreadyGenerated
+                ? 'bg-gray-100 text-gray-600 border border-gray-200'
+                : 'bg-gradient-to-r from-indigo-500 to-sky-500 text-white hover:from-indigo-600 hover:to-sky-600 shadow-md hover:shadow-lg'
+            } disabled:opacity-60 disabled:cursor-not-allowed`}
+          >
+            {generating ? (
+              <><RefreshCcw className="w-4 h-4 animate-spin" />生成中...</>
+            ) : generated ? (
+              <><CheckCircle2 className="w-4 h-4" />已生成明日待办</>
+            ) : alreadyGenerated ? (
+              <><CheckCircle2 className="w-4 h-4" />明日待办已生成</>
+            ) : (
+              <><Sparkles className="w-4 h-4" />生成明日待办</>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -281,17 +336,16 @@ export const EveningSummary: React.FC = () => {
             <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
             </div>
-            <span className="text-sm text-gray-500">漏收笔数</span>
+            <span className="text-sm text-gray-500">漏收</span>
           </div>
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-bold text-gray-900 font-mono">{formatNumber(unresolvedMissedCharges.length)}</p>
-            {rectifyingMissedCharges.length > 0 && (
-              <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-              整改中 {rectifyingMissedCharges.length}
-            </span>
-            )}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold text-red-600 font-mono">{unresolvedMC.length}</span>
+            <span className="text-xs text-gray-400">/</span>
+            <span className="text-lg font-bold text-amber-600 font-mono">{rectifyingMC.length}</span>
+            <span className="text-xs text-gray-400">/</span>
+            <span className="text-lg font-bold text-green-600 font-mono">{rectifiedMC.length}</span>
           </div>
-          <p className="text-xs text-amber-500 mt-1">{criticalAlerts} 项严重异常</p>
+          <p className="text-xs text-gray-400 mt-1">未处理 / 整改中 / 已补收</p>
         </div>
 
         <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -318,12 +372,13 @@ export const EveningSummary: React.FC = () => {
           {Object.keys(roleConfig).map((roleKey) => {
             const role = roleKey as RoleType;
             const config = roleConfig[role];
-            const issues = role === 'reception'
-              ? receptionIssues
-              : role === 'consultant'
-              ? consultantIssues
-              : doctorIssues;
             const isExpanded = expandedRole === role;
+
+            const issueCount = role === 'reception'
+              ? receptionMissedCharges.length + receptionPendingMessages.length
+              : role === 'consultant'
+              ? consultantLowAddon.length + consultantLowConversion.length + consultantPendingMessages.length
+              : doctorRefundAlerts.length + doctorMissedCharges.length;
 
             return (
               <div
@@ -334,120 +389,194 @@ export const EveningSummary: React.FC = () => {
                   className="p-4 cursor-pointer hover:bg-white/50 transition-colors"
                   onClick={() => toggleRole(role)}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.color} bg-white/60`}>
-                      {config.icon}
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.color} bg-white/60`}>
+                        {config.icon}
+                      </div>
+                      <span className={`font-semibold ${config.color}`}>
+                        {config.label}
+                      </span>
                     </div>
-                    <span className={`font-semibold ${config.color}`}>
-                      {config.label}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xl font-bold font-mono ${config.color}`}>
+                        {issueCount}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className={`w-4 h-4 ${config.color}`} />
+                      ) : (
+                        <ChevronDown className={`w-4 h-4 ${config.color}`} />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xl font-bold font-mono ${config.color}`}>
-                      {issues.total}
-                    </span>
-                    {isExpanded ? (
-                      <ChevronUp className={`w-4 h-4 ${config.color}`} />
-                    ) : (
-                      <ChevronDown className={`w-4 h-4 ${config.color}`} />
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-500">项待跟进问题</p>
                 </div>
-                <p className="text-xs text-gray-500">项待跟进问题</p>
+
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-0 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-1.5">
+                      {role === 'reception' && (
+                        <>
+                          {receptionMissedCharges.map(mc => (
+                            <div
+                              key={mc.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => handleNavigatePackage(mc.packageId, 'missed_charges')}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {mc.status === 'rectifying' ? (
+                                  <Clock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                ) : (
+                                  <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                )}
+                                <span className="text-gray-700 truncate">
+                                  {mc.patientName} {mc.chargeItem}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="font-mono text-xs text-red-600">¥{mc.missedAmount}</span>
+                                <ExternalLink className="w-3 h-3 text-gray-400" />
+                              </div>
+                            </div>
+                          ))}
+                          {receptionPendingMessages.map(msg => (
+                            <div
+                              key={msg.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => handleNavigateMessage(msg)}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Send className="w-3.5 h-3.5 text-sky-500 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{msg.content}</span>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                          {receptionMissedCharges.length === 0 && receptionPendingMessages.length === 0 && (
+                            <p className="text-xs text-gray-400 py-2 text-center">暂无待跟进问题</p>
+                          )}
+                        </>
+                      )}
+
+                      {role === 'consultant' && (
+                        <>
+                          {consultantLowAddon.map(a => (
+                            <div
+                              key={a.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => a.relatedPackage && handleNavigatePackage(a.relatedPackage, 'consultants')}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{a.title}</span>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                          {consultantLowConversion.map(a => (
+                            <div
+                              key={a.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => a.relatedTimeSlot && handleNavigatePackage('pkg-001', 'timeslots')}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{a.title}</span>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                          {consultantPendingMessages.map(msg => (
+                            <div
+                              key={msg.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => handleNavigateMessage(msg)}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Send className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{msg.content}</span>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                          {consultantLowAddon.length === 0 && consultantLowConversion.length === 0 && consultantPendingMessages.length === 0 && (
+                            <p className="text-xs text-gray-400 py-2 text-center">暂无待跟进问题</p>
+                          )}
+                        </>
+                      )}
+
+                      {role === 'doctor' && (
+                        <>
+                          {doctorRefundAlerts.map(a => (
+                            <div
+                              key={a.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => a.relatedPackage && handleNavigatePackage(a.relatedPackage, 'doctors')}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <RotateCcw className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{a.title}</span>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                          {doctorMissedCharges.slice(0, 5).map(mc => (
+                            <div
+                              key={mc.id}
+                              className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/90 transition-colors"
+                              onClick={() => handleNavigatePackage(mc.packageId, 'missed_charges')}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {mc.status === 'rectifying' ? (
+                                  <Clock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                ) : (
+                                  <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                )}
+                                <span className="text-gray-700 truncate">
+                                  {mc.doctorName} - {mc.patientName}
+                                </span>
+                              </div>
+                              <span className="font-mono text-xs text-red-600 flex-shrink-0">¥{mc.missedAmount}</span>
+                            </div>
+                          ))}
+                          {doctorRefundAlerts.length === 0 && doctorMissedCharges.length === 0 && (
+                            <p className="text-xs text-gray-400 py-2 text-center">暂无待跟进问题</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {isExpanded && (
-                <div className="px-4 pb-4 pt-0 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-2">
-                    {role === 'reception' && (
-                      <>
-                        {receptionIssues.missedCharges > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">漏收待核实</span>
-                            <span className="font-mono font-semibold text-amber-600">{receptionIssues.missedCharges}笔</span>
-                          </div>
-                        )}
-                        {receptionIssues.pendingMessages > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">待执行指令</span>
-                            <span className="font-mono font-semibold text-sky-600">{receptionIssues.pendingMessages}条</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={handleViewReceptionDetail}
-                          className={`w-full mt-2 py-2 bg-white/80 rounded-lg text-xs font-medium hover:bg-white transition-colors ${config.color}`}
-                        >
-                          查看详情 →
-                        </button>
-                      </>
-                    )}
-
-                    {role === 'consultant' && (
-                      <>
-                        {consultantIssues.lowAddonAlerts > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">加购率偏低</span>
-                            <span className="font-mono font-semibold text-amber-600">{consultantIssues.lowAddonAlerts}项</span>
-                          </div>
-                        )}
-                        {consultantIssues.lowConversionAlerts > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">时段成交低</span>
-                            <span className="font-mono font-semibold text-amber-600">{consultantIssues.lowConversionAlerts}项</span>
-                          </div>
-                        )}
-                        {consultantIssues.pendingMessages > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">待执行指令</span>
-                            <span className="font-mono font-semibold text-purple-600">{consultantIssues.pendingMessages}条</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={handleViewConsultantDetail}
-                          className={`w-full mt-2 py-2 bg-white/80 rounded-lg text-xs font-medium hover:bg-white transition-colors ${config.color}`}
-                        >
-                          查看详情 →
-                        </button>
-                      </>
-                    )}
-
-                    {role === 'doctor' && (
-                      <>
-                        {doctorIssues.refundAlerts > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">退款率偏高</span>
-                            <span className="font-mono font-semibold text-red-500">{doctorIssues.refundAlerts}项</span>
-                          </div>
-                        )}
-                        {doctorIssues.missedCharges > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">涉及漏收</span>
-                            <span className="font-mono font-semibold text-amber-600">{doctorIssues.missedCharges}笔</span>
-                          </div>
-                        )}
-                        {doctorIssues.pendingMessages > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
-                            <span className="text-gray-600">待执行指令</span>
-                            <span className="font-mono font-semibold text-teal-600">{doctorIssues.pendingMessages}条</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={handleViewDoctorDetail}
-                          className={`w-full mt-2 py-2 bg-white/80 rounded-lg text-xs font-medium hover:bg-white transition-colors ${config.color}`}
-                        >
-                          查看详情 →
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
             );
           })}
         </div>
       </div>
+
+      {showHandover && (
+        <div className="mb-6 bg-white/80 rounded-xl border border-indigo-200 p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-500" />
+              交接摘要
+            </h3>
+            <button
+              onClick={handleCopyHandover}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                copied
+                  ? 'bg-green-100 text-green-700 border border-green-200'
+                  : 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+              }`}
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? '已复制' : '复制到剪贴板'}
+            </button>
+          </div>
+          <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed bg-gray-50 rounded-lg p-4 max-h-72 overflow-y-auto">
+            {generateHandoverText()}
+          </pre>
+        </div>
+      )}
 
       <div className="bg-white/70 rounded-xl p-4 border border-gray-100">
         <div className="flex items-center gap-2 mb-3">
@@ -464,15 +593,13 @@ export const EveningSummary: React.FC = () => {
               </span>
             </div>
           )}
-          {unresolvedMissedCharges.length > 0 && (
+          {(unresolvedMC.length > 0 || rectifyingMC.length > 0) && (
             <div className="flex items-start gap-2 text-sm">
               <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <span className="text-gray-600">
-                存在 <span className="font-medium text-amber-600">{unresolvedMissedCharges.length} 笔</span> 漏收待处理
-                {rectifyingMissedCharges.length > 0 && (
-                  <>，<span className="font-medium text-sky-600">{rectifyingMissedCharges.length} 笔</span> 整改中
-                  </>
-                )}，建议前台今日完成核实补收
+                漏收：<span className="font-medium text-red-600">{unresolvedMC.length}笔未处理</span>
+                {rectifyingMC.length > 0 && <>，<span className="font-medium text-amber-600">{rectifyingMC.length}笔整改中</span></>}
+                {rectifiedMC.length > 0 && <>，<span className="font-medium text-green-600">{rectifiedMC.length}笔已补收</span></>}
               </span>
             </div>
           )}
@@ -494,7 +621,7 @@ export const EveningSummary: React.FC = () => {
               </span>
             </div>
           )}
-          {totalRefunds === 0 && unresolvedMissedCharges.length === 0 && todayPending === 0 && overviewStats.polishAddRate >= 40 && (
+          {totalRefunds === 0 && unresolvedMC.length === 0 && todayPending === 0 && overviewStats.polishAddRate >= 40 && (
             <div className="flex items-start gap-2 text-sm">
               <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
               <span className="text-gray-600">今日各项指标表现良好，继续保持！</span>

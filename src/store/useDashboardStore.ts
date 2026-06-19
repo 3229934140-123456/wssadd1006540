@@ -323,7 +323,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   generateTrendData: () => {
     const result: TrendDayData[] = [];
-    const baseDate = new Date();
+    const baseDate = new Date(get().currentDate);
     baseDate.setHours(0, 0, 0, 0);
 
     for (let i = 6; i >= 0; i--) {

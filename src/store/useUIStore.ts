@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type DetailTab = 'doctors' | 'consultants' | 'timeslots' | 'missed_charges';
+export type DetailTab = 'doctors' | 'consultants' | 'timeslots' | 'missed_charges';
 
 interface UIState {
   showMessagePanel: boolean;
