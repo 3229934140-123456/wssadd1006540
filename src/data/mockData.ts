@@ -1,0 +1,321 @@
+import type {
+  OverviewStats,
+  PackageCategory,
+  PackageDetail,
+  AnomalyAlert,
+  ManagerMessage,
+  ClinicInfo,
+} from '@/types';
+
+export const clinics: ClinicInfo[] = [
+  { id: '1', name: '总店', address: '北京市朝阳区建国路88号' },
+  { id: '2', name: '海淀分店', address: '北京市海淀区中关村大街1号' },
+  { id: '3', name: '朝阳分店', address: '北京市朝阳区朝阳门外大街10号' },
+];
+
+export const overviewStats: OverviewStats = {
+  appointmentCount: 32,
+  actualArrival: 28,
+  packageDeals: 22,
+  avgOrderValue: 586,
+  polishAddRate: 45,
+  comparedYesterday: {
+    appointmentCount: 8,
+    actualArrival: 5,
+    packageDeals: 3,
+    avgOrderValue: -2,
+    polishAddRate: 8,
+  },
+};
+
+export const packageCategories: PackageCategory[] = [
+  {
+    id: 'pkg-001',
+    name: '普通洁牙',
+    type: 'basic',
+    sales: 12,
+    refunds: 1,
+    reschedules: 2,
+    revenue: 3588,
+    targetSales: 15,
+    description: '基础口腔清洁服务',
+    price: 299,
+  },
+  {
+    id: 'pkg-002',
+    name: '喷砂抛光',
+    type: 'polish',
+    sales: 8,
+    refunds: 2,
+    reschedules: 1,
+    revenue: 4784,
+    targetSales: 10,
+    description: '深度清洁+专业抛光',
+    price: 598,
+  },
+  {
+    id: 'pkg-003',
+    name: '敏感护理',
+    type: 'sensitive',
+    sales: 5,
+    refunds: 0,
+    reschedules: 0,
+    revenue: 3990,
+    targetSales: 6,
+    description: '针对敏感牙齿的专属护理',
+    price: 798,
+  },
+  {
+    id: 'pkg-004',
+    name: '烟渍喷砂',
+    type: 'special',
+    sales: 6,
+    refunds: 3,
+    reschedules: 1,
+    revenue: 5388,
+    targetSales: 8,
+    description: '重度烟渍茶渍深度清洁',
+    price: 898,
+  },
+  {
+    id: 'pkg-005',
+    name: '儿童洁牙',
+    type: 'basic',
+    sales: 4,
+    refunds: 0,
+    reschedules: 1,
+    revenue: 1196,
+    targetSales: 5,
+    description: '专为儿童设计的温和洁牙',
+    price: 299,
+  },
+  {
+    id: 'pkg-006',
+    name: '牙周护理',
+    type: 'sensitive',
+    sales: 3,
+    refunds: 0,
+    reschedules: 0,
+    revenue: 2994,
+    targetSales: 4,
+    description: '牙周炎患者专项护理',
+    price: 998,
+  },
+];
+
+export const packageDetails: Record<string, PackageDetail> = {
+  'pkg-001': {
+    packageId: 'pkg-001',
+    doctors: [
+      { id: 'd1', name: '张明医生', avatar: '', sales: 5, avgPrice: 299, refundRate: 0, satisfaction: 98 },
+      { id: 'd2', name: '李华医生', avatar: '', sales: 4, avgPrice: 299, refundRate: 25, satisfaction: 92 },
+      { id: 'd3', name: '王芳医生', avatar: '', sales: 3, avgPrice: 299, refundRate: 0, satisfaction: 96 },
+    ],
+    consultants: [
+      { id: 'c1', name: '刘经理', avatar: '', recommendationRate: 85, addOnRate: 40, dealCount: 8 },
+      { id: 'c2', name: '陈顾问', avatar: '', recommendationRate: 75, addOnRate: 35, dealCount: 4 },
+    ],
+    timeSlots: [
+      { time: '09:00-10:00', appointments: 4, dealRate: 100, arrivalRate: 100 },
+      { time: '10:00-11:00', appointments: 3, dealRate: 100, arrivalRate: 67 },
+      { time: '14:00-15:00', appointments: 3, dealRate: 67, arrivalRate: 100 },
+      { time: '15:00-16:00', appointments: 2, dealRate: 50, arrivalRate: 100 },
+      { time: '16:00-17:00', appointments: 0, dealRate: 0, arrivalRate: 0 },
+    ],
+  },
+  'pkg-002': {
+    packageId: 'pkg-002',
+    doctors: [
+      { id: 'd1', name: '张明医生', avatar: '', sales: 3, avgPrice: 598, refundRate: 0, satisfaction: 95 },
+      { id: 'd4', name: '赵强医生', avatar: '', sales: 3, avgPrice: 598, refundRate: 33, satisfaction: 88 },
+      { id: 'd2', name: '李华医生', avatar: '', sales: 2, avgPrice: 598, refundRate: 50, satisfaction: 85 },
+    ],
+    consultants: [
+      { id: 'c1', name: '刘经理', avatar: '', recommendationRate: 90, addOnRate: 55, dealCount: 5 },
+      { id: 'c3', name: '孙顾问', avatar: '', recommendationRate: 80, addOnRate: 45, dealCount: 3 },
+    ],
+    timeSlots: [
+      { time: '09:00-10:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
+      { time: '10:00-11:00', appointments: 2, dealRate: 50, arrivalRate: 100 },
+      { time: '14:00-15:00', appointments: 3, dealRate: 67, arrivalRate: 100 },
+      { time: '15:00-16:00', appointments: 1, dealRate: 0, arrivalRate: 100 },
+    ],
+  },
+  'pkg-003': {
+    packageId: 'pkg-003',
+    doctors: [
+      { id: 'd4', name: '赵强医生', avatar: '', sales: 2, avgPrice: 798, refundRate: 0, satisfaction: 100 },
+      { id: 'd3', name: '王芳医生', avatar: '', sales: 2, avgPrice: 798, refundRate: 0, satisfaction: 98 },
+      { id: 'd5', name: '周静医生', avatar: '', sales: 1, avgPrice: 798, refundRate: 0, satisfaction: 96 },
+    ],
+    consultants: [
+      { id: 'c2', name: '陈顾问', avatar: '', recommendationRate: 95, addOnRate: 60, dealCount: 3 },
+      { id: 'c1', name: '刘经理', avatar: '', recommendationRate: 88, addOnRate: 50, dealCount: 2 },
+    ],
+    timeSlots: [
+      { time: '10:00-11:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
+      { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
+      { time: '16:00-17:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+    ],
+  },
+  'pkg-004': {
+    packageId: 'pkg-004',
+    doctors: [
+      { id: 'd1', name: '张明医生', avatar: '', sales: 3, avgPrice: 898, refundRate: 33, satisfaction: 90 },
+      { id: 'd4', name: '赵强医生', avatar: '', sales: 2, avgPrice: 898, refundRate: 50, satisfaction: 82 },
+      { id: 'd5', name: '周静医生', avatar: '', sales: 1, avgPrice: 898, refundRate: 0, satisfaction: 95 },
+    ],
+    consultants: [
+      { id: 'c3', name: '孙顾问', avatar: '', recommendationRate: 75, addOnRate: 40, dealCount: 3 },
+      { id: 'c1', name: '刘经理', avatar: '', recommendationRate: 82, addOnRate: 35, dealCount: 3 },
+    ],
+    timeSlots: [
+      { time: '09:00-10:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+      { time: '10:00-11:00', appointments: 2, dealRate: 50, arrivalRate: 100 },
+      { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
+      { time: '15:00-16:00', appointments: 1, dealRate: 0, arrivalRate: 100 },
+    ],
+  },
+  'pkg-005': {
+    packageId: 'pkg-005',
+    doctors: [
+      { id: 'd3', name: '王芳医生', avatar: '', sales: 3, avgPrice: 299, refundRate: 0, satisfaction: 100 },
+      { id: 'd5', name: '周静医生', avatar: '', sales: 1, avgPrice: 299, refundRate: 0, satisfaction: 98 },
+    ],
+    consultants: [
+      { id: 'c2', name: '陈顾问', avatar: '', recommendationRate: 100, addOnRate: 25, dealCount: 3 },
+      { id: 'c3', name: '孙顾问', avatar: '', recommendationRate: 100, addOnRate: 0, dealCount: 1 },
+    ],
+    timeSlots: [
+      { time: '09:00-10:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+      { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
+      { time: '16:00-17:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+    ],
+  },
+  'pkg-006': {
+    packageId: 'pkg-006',
+    doctors: [
+      { id: 'd4', name: '赵强医生', avatar: '', sales: 2, avgPrice: 998, refundRate: 0, satisfaction: 96 },
+      { id: 'd2', name: '李华医生', avatar: '', sales: 1, avgPrice: 998, refundRate: 0, satisfaction: 94 },
+    ],
+    consultants: [
+      { id: 'c1', name: '刘经理', avatar: '', recommendationRate: 92, addOnRate: 67, dealCount: 2 },
+      { id: 'c2', name: '陈顾问', avatar: '', recommendationRate: 85, addOnRate: 50, dealCount: 1 },
+    ],
+    timeSlots: [
+      { time: '10:00-11:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+      { time: '14:00-15:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+      { time: '15:00-16:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
+    ],
+  },
+};
+
+export const anomalyAlerts: AnomalyAlert[] = [
+  {
+    id: 'alert-001',
+    type: 'high_refund',
+    severity: 'critical',
+    title: '烟渍喷砂套餐退款率偏高',
+    description: '近3天该套餐退款率达33.3%，远超警戒线15%。主要集中在赵强医生和张明医生。',
+    relatedPackage: 'pkg-004',
+    relatedDoctor: 'd4',
+    suggestedAction: '建议与医生沟通操作流程，或检查咨询师术前沟通是否充分',
+    detectedAt: '2026-06-20 08:30',
+    dismissed: false,
+  },
+  {
+    id: 'alert-002',
+    type: 'low_conversion',
+    severity: 'warning',
+    title: '下午15:00-16:00预约满但成交率低',
+    description: '该时段连续3天预约率100%，但套餐成交率仅45%，低于60%警戒线。',
+    relatedTimeSlot: '15:00-16:00',
+    suggestedAction: '检查该时段咨询师排班，或调整预约策略',
+    detectedAt: '2026-06-20 08:30',
+    dismissed: false,
+  },
+  {
+    id: 'alert-003',
+    type: 'missed_charge',
+    severity: 'critical',
+    title: '抛光项目漏收情况严重',
+    description: '本周发现5例洁牙已完成但未收取抛光费用，涉及金额约2500元。',
+    suggestedAction: '培训前台和医生在结算时确认项目，加强收费流程管控',
+    detectedAt: '2026-06-20 08:00',
+    dismissed: false,
+  },
+  {
+    id: 'alert-004',
+    type: 'low_addon',
+    severity: 'warning',
+    title: '普通洁牙抛光加购率偏低',
+    description: '普通洁牙客户抛光加购率仅35%，低于平均水平50%。主要涉及陈顾问。',
+    relatedPackage: 'pkg-001',
+    suggestedAction: '加强咨询师对抛光项目的推荐培训，或考虑调整套餐定价',
+    detectedAt: '2026-06-20 08:30',
+    dismissed: false,
+  },
+  {
+    id: 'alert-005',
+    type: 'high_refund',
+    severity: 'warning',
+    title: '喷砂抛光套餐退款率偏高',
+    description: '该套餐近7天退款率达18.2%，略高于警戒线。主要涉及李华医生。',
+    relatedPackage: 'pkg-002',
+    relatedDoctor: 'd2',
+    suggestedAction: '与李华医生沟通，了解客户退款原因',
+    detectedAt: '2026-06-20 08:30',
+    dismissed: false,
+  },
+];
+
+export const managerMessages: ManagerMessage[] = [
+  {
+    id: 'msg-001',
+    content: '下午主推烟渍喷砂套餐，每位到店客户都要介绍',
+    targetRole: 'consultant',
+    createdAt: '2026-06-19 13:00',
+    expectedDate: '2026-06-19',
+    status: 'completed',
+    result: {
+      executedAt: '2026-06-19 20:00',
+      metrics: [
+        { name: '烟渍喷砂套餐销量', before: 3, after: 6 },
+        { name: '咨询推荐率', before: 65, after: 88 },
+      ],
+      notes: '下午成功推荐6位客户购买烟渍喷砂套餐，超额完成目标',
+    },
+  },
+  {
+    id: 'msg-002',
+    content: '明天重点关注15:00-16:00时段的成交情况，安排刘经理跟进',
+    targetRole: 'all',
+    createdAt: '2026-06-19 21:00',
+    expectedDate: '2026-06-20',
+    status: 'pending',
+  },
+  {
+    id: 'msg-003',
+    content: '本周完成全体前台的收费流程培训，避免抛光漏收',
+    targetRole: 'reception',
+    createdAt: '2026-06-18 09:00',
+    expectedDate: '2026-06-21',
+    status: 'pending',
+  },
+  {
+    id: 'msg-004',
+    content: '检查李华医生近一周的客户满意度，了解退款原因',
+    targetRole: 'consultant',
+    createdAt: '2026-06-18 10:30',
+    expectedDate: '2026-06-19',
+    status: 'completed',
+    result: {
+      executedAt: '2026-06-19 17:00',
+      metrics: [
+        { name: '李华医生满意度', before: 82, after: 92 },
+        { name: '退款率', before: 25, after: 12 },
+      ],
+      notes: '已与李华医生沟通，主要是操作时间安排过紧导致客户体验不佳，已调整排班',
+    },
+  },
+];
