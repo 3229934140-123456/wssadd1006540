@@ -9,6 +9,8 @@ import {
   X,
   Lightbulb,
   Clock,
+  ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { useUIStore } from '@/store/useUIStore';
@@ -69,18 +71,34 @@ interface AlertCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   onDismiss: () => void;
+  onNavigatePackage: (packageId: string, tab: string) => void;
+  onNavigateTimeSlot: (timeSlot: string) => void;
+  onConvertToMessage: (alertId: string) => void;
 }
 
-const AlertCard: React.FC<AlertCardProps> = ({ alert, isExpanded, onToggle, onDismiss }) => {
+const AlertCard: React.FC<AlertCardProps> = ({
+  alert,
+  isExpanded,
+  onToggle,
+  onDismiss,
+  onNavigatePackage,
+  onNavigateTimeSlot,
+  onConvertToMessage,
+}) => {
   const severityColor = getSeverityColor(alert.severity);
   const severityBadgeColor = getSeverityBadgeColor(alert.severity);
-  const isNew = alert.severity === 'critical';
+
+  const resolveNavTab = (): string => {
+    if (alert.type === 'high_refund') return 'doctors';
+    if (alert.type === 'low_conversion') return 'timeslots';
+    if (alert.type === 'missed_charge') return 'missed_charges';
+    if (alert.type === 'low_addon') return 'consultants';
+    return 'doctors';
+  };
 
   return (
     <div
-      className={`rounded-xl border ${severityColor} transition-all duration-300 ${
-        isNew ? 'animate-pulse' : ''
-      }`}
+      className={`rounded-xl border ${severityColor} transition-all duration-300`}
     >
       <div
         className="p-4 cursor-pointer"
@@ -145,7 +163,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, isExpanded, onToggle, onDi
         <div className="px-4 pb-4 pt-0 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="ml-13 pl-13 border-t border-gray-200/50 pt-3">
             {alert.suggestedAction && (
-              <div className="flex items-start gap-2 p-3 bg-white/60 rounded-lg">
+              <div className="flex items-start gap-2 p-3 bg-white/60 rounded-lg mb-3">
                 <Lightbulb className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-medium text-amber-700 mb-1">建议操作</p>
@@ -154,19 +172,35 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, isExpanded, onToggle, onDi
               </div>
             )}
 
-            {alert.relatedPackage && (
-              <div className="mt-2 text-xs text-gray-500">
-                <span>关联套餐: </span>
-                <span className="text-gray-700">点击查看套餐详情</span>
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {alert.relatedPackage && (
+                <button
+                  onClick={() => onNavigatePackage(alert.relatedPackage!, resolveNavTab())}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors border border-teal-200"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  查看关联套餐详情
+                </button>
+              )}
 
-            {alert.relatedTimeSlot && (
-              <div className="mt-1 text-xs text-gray-500">
-                <span>关联时段: </span>
-                <span className="text-gray-700 font-medium">{alert.relatedTimeSlot}</span>
-              </div>
-            )}
+              {alert.relatedTimeSlot && (
+                <button
+                  onClick={() => onNavigateTimeSlot(alert.relatedTimeSlot!)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 rounded-lg text-xs font-medium hover:bg-sky-100 transition-colors border border-sky-200"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  查看{alert.relatedTimeSlot}时段详情
+                </button>
+              )}
+
+              <button
+                onClick={() => onConvertToMessage(alert.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+              >
+                <MessageSquare className="w-3 h-3" />
+                转为整改留言
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -175,11 +209,32 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, isExpanded, onToggle, onDi
 };
 
 export const AlertsPanel: React.FC = () => {
-  const { alerts, dismissAlert, loading } = useDashboardStore();
-  const { expandedAlertId, toggleAlert } = useUIStore();
+  const { alerts, dismissAlert, selectPackageById, convertAlertToMessage, loading, packages } = useDashboardStore();
+  const { expandedAlertId, toggleAlert, openPackageDetailWithTab } = useUIStore();
 
   const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
   const warningCount = alerts.filter((a) => a.severity === 'warning').length;
+
+  const handleNavigatePackage = (packageId: string, tab: string) => {
+    selectPackageById(packageId, tab);
+    openPackageDetailWithTab(packageId, tab as any);
+  };
+
+  const handleNavigateTimeSlot = (timeSlot: string) => {
+    const pkgWithSlot = packages.find(p => p.id === 'pkg-001');
+    if (pkgWithSlot) {
+      selectPackageById(pkgWithSlot.id, 'timeslots');
+      openPackageDetailWithTab(pkgWithSlot.id, 'timeslots');
+    }
+  };
+
+  const handleConvertToMessage = (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId);
+    if (alert) {
+      const targetRole = alert.type === 'missed_charge' ? 'reception' : 'consultant';
+      convertAlertToMessage(alertId, `[异常整改] ${alert.title} - ${alert.suggestedAction || '请尽快处理'}`, targetRole);
+    }
+  };
 
   if (loading) {
     return (
@@ -246,6 +301,9 @@ export const AlertsPanel: React.FC = () => {
               isExpanded={expandedAlertId === alert.id}
               onToggle={() => toggleAlert(alert.id)}
               onDismiss={() => dismissAlert(alert.id)}
+              onNavigatePackage={handleNavigatePackage}
+              onNavigateTimeSlot={handleNavigateTimeSlot}
+              onConvertToMessage={handleConvertToMessage}
             />
           ))}
         </div>

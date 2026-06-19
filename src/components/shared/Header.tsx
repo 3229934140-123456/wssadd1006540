@@ -1,10 +1,11 @@
 import React from 'react';
-import { Calendar, RefreshCw, Building2, User, Bell } from 'lucide-react';
+import { Calendar, RefreshCw, Building2, User, Bell, Sunrise, Moon } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { formatDate } from '@/utils/formatters';
+import type { ViewMode } from '@/types';
 
 export const Header: React.FC = () => {
-  const { currentDate, selectedClinic, clinics, setCurrentDate, setSelectedClinic, fetchData, loading } =
+  const { currentDate, selectedClinic, clinics, viewMode, setCurrentDate, setSelectedClinic, setViewMode, fetchData, loading } =
     useDashboardStore();
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +33,31 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setViewMode('morning')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                viewMode === 'morning'
+                  ? 'bg-white text-amber-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Sunrise className="w-4 h-4" />
+              开店前
+            </button>
+            <button
+              onClick={() => setViewMode('evening')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                viewMode === 'evening'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Moon className="w-4 h-4" />
+              收班后
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-gray-400" />
             <select
@@ -84,9 +110,28 @@ export const Header: React.FC = () => {
       </div>
 
       <div className="mt-3 pt-3 border-t border-gray-50">
-        <p className="text-sm text-gray-500">
-          <span className="font-medium text-gray-700">{formatDate(currentDate)}</span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            <span className="font-medium text-gray-700">{formatDate(currentDate)}</span>
+          </p>
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+            viewMode === 'morning'
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-indigo-50 text-indigo-700'
+          }`}>
+            {viewMode === 'morning' ? (
+              <>
+                <Sunrise className="w-3.5 h-3.5" />
+                开店前模式 — 关注预约、目标、风险预警
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5" />
+                收班后模式 — 关注成交、退款、漏收、留言复盘
+              </>
+            )}
+          </div>
+        </div>
       </div>
       </div>
     </header>

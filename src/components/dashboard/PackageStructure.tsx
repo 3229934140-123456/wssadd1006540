@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { ChevronRight, RotateCcw, DollarSign, Target, Eye } from 'lucide-react';
+import { RotateCcw, DollarSign, Target } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { useUIStore } from '@/store/useUIStore';
 import {
@@ -29,7 +29,6 @@ const SkeletonRow: React.FC = () => (
     <div className="w-16 h-4 bg-gray-100 rounded" />
     <div className="w-16 h-4 bg-gray-100 rounded" />
     <div className="w-16 h-4 bg-gray-100 rounded" />
-    <div className="w-8 h-8 bg-gray-100 rounded" />
   </div>
 );
 
@@ -37,16 +36,14 @@ interface PackageRowProps {
   pkg: PackageCategory;
   index: number;
   isSelected: boolean;
-  onSelect: (pkg: PackageCategory) => void;
-  onViewDetail: () => void;
+  onSelectAndOpen: (pkg: PackageCategory) => void;
 }
 
 const PackageRow: React.FC<PackageRowProps> = ({
   pkg,
   index,
   isSelected,
-  onSelect,
-  onViewDetail,
+  onSelectAndOpen,
 }) => {
   const refundRate = pkg.sales > 0 ? (pkg.refunds / pkg.sales) * 100 : 0;
   const completionRate = pkg.targetSales > 0 ? (pkg.sales / pkg.targetSales) * 100 : 0;
@@ -54,10 +51,10 @@ const PackageRow: React.FC<PackageRowProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-4 p-4 border-b border-gray-50 last:border-0 cursor-pointer transition-all hover:bg-gray-50 ${
+      className={`flex items-center gap-4 p-4 border-b border-gray-50 last:border-0 cursor-pointer transition-all hover:bg-teal-50/50 ${
         isSelected ? 'bg-teal-50' : ''
       }`}
-      onClick={() => onSelect(pkg)}
+      onClick={() => onSelectAndOpen(pkg)}
     >
       <div className="w-32 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -125,16 +122,11 @@ const PackageRow: React.FC<PackageRowProps> = ({
         </p>
       </div>
 
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(pkg);
-          onViewDetail();
-        }}
-        className="p-2 rounded-lg hover:bg-teal-100 text-teal-600 transition-colors"
-      >
-        <Eye className="w-4 h-4" />
-      </button>
+      <div className="flex-shrink-0 text-teal-500">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
     </div>
   );
 };
@@ -152,6 +144,11 @@ export const PackageStructure: React.FC = () => {
     sales: pkg.sales,
     fill: COLORS[index % COLORS.length],
   }));
+
+  const handleRowClick = (pkg: PackageCategory) => {
+    selectPackage(pkg);
+    openPackageModal();
+  };
 
   if (loading) {
     return (
@@ -231,22 +228,10 @@ export const PackageStructure: React.FC = () => {
             pkg={pkg}
             index={index}
             isSelected={selectedPackage?.id === pkg.id}
-            onSelect={selectPackage}
-            onViewDetail={openPackageModal}
+            onSelectAndOpen={handleRowClick}
           />
         ))}
       </div>
-
-      {selectedPackage && (
-        <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>已选择: </span>
-            <span className="font-medium text-teal-600">{selectedPackage.name}</span>
-            <ChevronRight className="w-4 h-4" />
-            <span>点击"查看详情"查看医生、咨询师和时段表现</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -54,11 +54,29 @@ export interface TimeSlotPerformance {
   arrivalRate: number;
 }
 
+export interface MissedChargeRecord {
+  id: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  consultantId: string;
+  consultantName: string;
+  packageName: string;
+  packageId: string;
+  timeSlot: string;
+  chargeItem: string;
+  missedAmount: number;
+  detectedAt: string;
+  status: 'unresolved' | 'rectified';
+  rectifiedAt?: string;
+}
+
 export interface PackageDetail {
   packageId: string;
   doctors: DoctorPerformance[];
   consultants: ConsultantPerformance[];
   timeSlots: TimeSlotPerformance[];
+  missedCharges: MissedChargeRecord[];
 }
 
 export type AlertType = 'high_refund' | 'low_conversion' | 'missed_charge' | 'low_addon';
@@ -81,6 +99,12 @@ export interface AnomalyAlert {
 export type TargetRole = 'reception' | 'consultant' | 'all';
 export type MessageStatus = 'pending' | 'completed';
 
+export interface MessageMetric {
+  name: string;
+  before: number;
+  after: number;
+}
+
 export interface ManagerMessage {
   id: string;
   content: string;
@@ -88,16 +112,16 @@ export interface ManagerMessage {
   createdAt: string;
   expectedDate: string;
   status: MessageStatus;
+  sourceAlertId?: string;
+  sourceType?: 'manual' | 'alert';
   result?: {
     executedAt: string;
-    metrics: {
-      name: string;
-      before: number;
-      after: number;
-    }[];
+    metrics: MessageMetric[];
     notes: string;
   };
 }
+
+export type ViewMode = 'morning' | 'evening';
 
 export interface ClinicInfo {
   id: string;

@@ -122,6 +122,10 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '15:00-16:00', appointments: 2, dealRate: 50, arrivalRate: 100 },
       { time: '16:00-17:00', appointments: 0, dealRate: 0, arrivalRate: 0 },
     ],
+    missedCharges: [
+      { id: 'mc-001', patientName: '王先生', doctorId: 'd1', doctorName: '张明医生', consultantId: 'c1', consultantName: '刘经理', packageName: '普通洁牙', packageId: 'pkg-001', timeSlot: '09:00-10:00', chargeItem: '喷砂抛光', missedAmount: 299, detectedAt: '2026-06-20 10:15', status: 'unresolved' },
+      { id: 'mc-002', patientName: '李女士', doctorId: 'd2', doctorName: '李华医生', consultantId: 'c2', consultantName: '陈顾问', packageName: '普通洁牙', packageId: 'pkg-001', timeSlot: '14:00-15:00', chargeItem: '抛光加购', missedAmount: 299, detectedAt: '2026-06-20 15:20', status: 'unresolved' },
+    ],
   },
   'pkg-002': {
     packageId: 'pkg-002',
@@ -140,6 +144,9 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '14:00-15:00', appointments: 3, dealRate: 67, arrivalRate: 100 },
       { time: '15:00-16:00', appointments: 1, dealRate: 0, arrivalRate: 100 },
     ],
+    missedCharges: [
+      { id: 'mc-003', patientName: '赵先生', doctorId: 'd4', doctorName: '赵强医生', consultantId: 'c3', consultantName: '孙顾问', packageName: '喷砂抛光', packageId: 'pkg-002', timeSlot: '10:00-11:00', chargeItem: '敏感护理加购', missedAmount: 200, detectedAt: '2026-06-20 11:05', status: 'unresolved' },
+    ],
   },
   'pkg-003': {
     packageId: 'pkg-003',
@@ -157,6 +164,7 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
       { time: '16:00-17:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
     ],
+    missedCharges: [],
   },
   'pkg-004': {
     packageId: 'pkg-004',
@@ -175,6 +183,10 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
       { time: '15:00-16:00', appointments: 1, dealRate: 0, arrivalRate: 100 },
     ],
+    missedCharges: [
+      { id: 'mc-004', patientName: '刘先生', doctorId: 'd1', doctorName: '张明医生', consultantId: 'c3', consultantName: '孙顾问', packageName: '烟渍喷砂', packageId: 'pkg-004', timeSlot: '09:00-10:00', chargeItem: '抛光加购', missedAmount: 299, detectedAt: '2026-06-20 09:50', status: 'rectified', rectifiedAt: '2026-06-20 10:30' },
+      { id: 'mc-005', patientName: '陈女士', doctorId: 'd4', doctorName: '赵强医生', consultantId: 'c1', consultantName: '刘经理', packageName: '烟渍喷砂', packageId: 'pkg-004', timeSlot: '10:00-11:00', chargeItem: '抛光加购', missedAmount: 299, detectedAt: '2026-06-20 11:10', status: 'unresolved' },
+    ],
   },
   'pkg-005': {
     packageId: 'pkg-005',
@@ -191,6 +203,7 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '14:00-15:00', appointments: 2, dealRate: 100, arrivalRate: 100 },
       { time: '16:00-17:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
     ],
+    missedCharges: [],
   },
   'pkg-006': {
     packageId: 'pkg-006',
@@ -207,6 +220,7 @@ export const packageDetails: Record<string, PackageDetail> = {
       { time: '14:00-15:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
       { time: '15:00-16:00', appointments: 1, dealRate: 100, arrivalRate: 100 },
     ],
+    missedCharges: [],
   },
 };
 
@@ -240,6 +254,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     severity: 'critical',
     title: '抛光项目漏收情况严重',
     description: '本周发现5例洁牙已完成但未收取抛光费用，涉及金额约2500元。',
+    relatedPackage: 'pkg-001',
     suggestedAction: '培训前台和医生在结算时确认项目，加强收费流程管控',
     detectedAt: '2026-06-20 08:00',
     dismissed: false,
@@ -277,6 +292,7 @@ export const managerMessages: ManagerMessage[] = [
     createdAt: '2026-06-19 13:00',
     expectedDate: '2026-06-19',
     status: 'completed',
+    sourceType: 'manual',
     result: {
       executedAt: '2026-06-19 20:00',
       metrics: [
@@ -293,6 +309,7 @@ export const managerMessages: ManagerMessage[] = [
     createdAt: '2026-06-19 21:00',
     expectedDate: '2026-06-20',
     status: 'pending',
+    sourceType: 'manual',
   },
   {
     id: 'msg-003',
@@ -300,6 +317,8 @@ export const managerMessages: ManagerMessage[] = [
     targetRole: 'reception',
     createdAt: '2026-06-18 09:00',
     expectedDate: '2026-06-21',
+    sourceType: 'alert',
+    sourceAlertId: 'alert-003',
     status: 'pending',
   },
   {
@@ -309,6 +328,7 @@ export const managerMessages: ManagerMessage[] = [
     createdAt: '2026-06-18 10:30',
     expectedDate: '2026-06-19',
     status: 'completed',
+    sourceType: 'manual',
     result: {
       executedAt: '2026-06-19 17:00',
       metrics: [

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type DetailTab = 'doctors' | 'consultants' | 'timeslots';
+type DetailTab = 'doctors' | 'consultants' | 'timeslots' | 'missed_charges';
 
 interface UIState {
   showMessagePanel: boolean;
@@ -8,13 +8,14 @@ interface UIState {
   activeDetailTab: DetailTab;
   expandedAlertId: string | null;
   expandedMessageId: string | null;
-  
+
   toggleMessagePanel: () => void;
   openMessagePanel: () => void;
   closeMessagePanel: () => void;
   openPackageModal: () => void;
   closePackageModal: () => void;
   setActiveDetailTab: (tab: DetailTab) => void;
+  openPackageDetailWithTab: (packageId: string, tab: DetailTab) => void;
   toggleAlert: (alertId: string) => void;
   toggleMessage: (messageId: string) => void;
 }
@@ -48,6 +49,10 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setActiveDetailTab: (tab) => {
     set({ activeDetailTab: tab });
+  },
+
+  openPackageDetailWithTab: (packageId, tab) => {
+    set({ showPackageModal: true, activeDetailTab: tab });
   },
 
   toggleAlert: (alertId) => {

@@ -9,18 +9,68 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { User, UserCheck, Clock, TrendingUp, Star, AlertTriangle } from 'lucide-react';
+import { Clock, Star, AlertTriangle, MessageSquare, CheckCircle, XCircle, Send } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { Tabs } from '@/components/shared/Tabs';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { useUIStore } from '@/store/useUIStore';
-import { formatCurrency, formatPercent, formatNumber } from '@/utils/formatters';
+import { formatCurrency, formatPercent, formatNumber, formatTime } from '@/utils/formatters';
+import type { MissedChargeRecord } from '@/types';
 
 const DOCTOR_COLORS = ['#0D9488', '#0EA5E9', '#8B5CF6', '#F97316', '#10B981'];
 
+const MissedChargeRow: React.FC<{
+  record: MissedChargeRecord;
+  onConvertToMessage: (record: MissedChargeRecord) => void;
+}> = ({ record, onConvertToMessage }) => {
+  const isUnresolved = record.status === 'unresolved';
+
+  return (
+    <tr className={`border-b border-gray-50 ${isUnresolved ? 'bg-red-50/30' : 'bg-green-50/30'}`}>
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-2">
+          {isUnresolved ? (
+            <XCircle className="w-4 h-4 text-red-500" />
+          ) : (
+            <CheckCircle className="w-4 h-4 text-green-500" />
+          )}
+          <span className="text-sm font-medium text-gray-900">{record.patientName}</span>
+        </div>
+      </td>
+      <td className="py-3 px-4 text-sm text-gray-700">{record.doctorName}</td>
+      <td className="py-3 px-4 text-sm text-gray-700">{record.consultantName}</td>
+      <td className="py-3 px-4 text-sm text-gray-500">{record.timeSlot}</td>
+      <td className="py-3 px-4">
+        <span className="text-sm font-medium text-red-600">{record.chargeItem}</span>
+      </td>
+      <td className="py-3 px-4">
+        <span className="font-mono font-semibold text-red-600">{formatCurrency(record.missedAmount)}</span>
+      </td>
+      <td className="py-3 px-4">
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+          isUnresolved ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+        }`}>
+          {isUnresolved ? '未处理' : '已补收'}
+        </span>
+      </td>
+      <td className="py-3 px-4">
+        {isUnresolved && (
+          <button
+            onClick={() => onConvertToMessage(record)}
+            className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded text-xs font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+          >
+            <Send className="w-3 h-3" />
+            转整改
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+};
+
 export const PackageDetailModal: React.FC = () => {
-  const { selectedPackage, packageDetail, loading } = useDashboardStore();
-  const { showPackageModal, closePackageModal, activeDetailTab, setActiveDetailTab } = useUIStore();
+  const { selectedPackage, packageDetail, loading, sendMessage } = useDashboardStore();
+  const { showPackageModal, closePackageModal, activeDetailTab, setActiveDetailTab, openMessagePanel } = useUIStore();
 
   if (!selectedPackage) return null;
 
@@ -28,6 +78,7 @@ export const PackageDetailModal: React.FC = () => {
     { key: 'doctors', label: '医生表现' },
     { key: 'consultants', label: '咨询师表现' },
     { key: 'timeslots', label: '时段表现' },
+    { key: 'missed_charges', label: '漏收追踪' },
   ];
 
   const doctorChartData = packageDetail?.doctors.map((doc, index) => ({
@@ -41,6 +92,36 @@ export const PackageDetailModal: React.FC = () => {
     appointments: slot.appointments,
     dealRate: slot.dealRate,
   })) || [];
+
+  const missedCharges = packageDetail?.missedCharges || [];
+  const unresolvedCount = missedCharges.filter(mc => mc.status === 'unresolved').length;
+  const totalMissedAmount = missedCharges
+    .filter(mc => mc.status === 'unresolved')
+    .reduce((sum, mc) => sum + mc.missedAmount, 0);
+
+  const doctorMissedMap = new Map<string, { name: string; count: number; amount: number }>();
+  const consultantMissedMap = new Map<string, { name: string; count: number; amount: number }>();
+  missedCharges.filter(mc => mc.status === 'unresolved').forEach(mc => {
+    const d = doctorMissedMap.get(mc.doctorId) || { name: mc.doctorName, count: 0, amount: 0 };
+    d.count++;
+    d.amount += mc.missedAmount;
+    doctorMissedMap.set(mc.doctorId, d);
+
+    const c = consultantMissedMap.get(mc.consultantId) || { name: mc.consultantName, count: 0, amount: 0 };
+    c.count++;
+    c.amount += mc.missedAmount;
+    consultantMissedMap.set(mc.consultantId, c);
+  });
+
+  const handleConvertToMessage = (record: MissedChargeRecord) => {
+    const today = new Date().toISOString().split('T')[0];
+    sendMessage(
+      `[漏收整改] ${record.patientName}的${record.chargeItem}（¥${record.missedAmount}）未收取，请前台核实并补收`,
+      'reception',
+      today
+    );
+    openMessagePanel();
+  };
 
   return (
     <Modal
@@ -293,6 +374,95 @@ export const PackageDetailModal: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {!loading && activeDetailTab === 'missed_charges' && (
+        <div>
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+              <p className="text-sm text-red-600 mb-1">未处理漏收</p>
+              <p className="text-2xl font-bold text-red-700 font-mono">{unresolvedCount}</p>
+            </div>
+            <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+              <p className="text-sm text-red-600 mb-1">涉及金额</p>
+              <p className="text-2xl font-bold text-red-700 font-mono">{formatCurrency(totalMissedAmount)}</p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+              <p className="text-sm text-green-600 mb-1">已补收</p>
+              <p className="text-2xl font-bold text-green-700 font-mono">{missedCharges.filter(mc => mc.status === 'rectified').length}</p>
+            </div>
+          </div>
+
+          {(doctorMissedMap.size > 0 || consultantMissedMap.size > 0) && (
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-white rounded-xl border border-gray-200">
+                <p className="text-sm font-medium text-gray-700 mb-3">医生漏收排名</p>
+                <div className="space-y-2">
+                  {Array.from(doctorMissedMap.entries())
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .map(([id, data]) => (
+                      <div key={id} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">{data.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-red-600 font-mono">{data.count}次</span>
+                          <span className="text-xs font-mono font-semibold text-red-700">{formatCurrency(data.amount)}</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-gray-200">
+                <p className="text-sm font-medium text-gray-700 mb-3">咨询师漏收排名</p>
+                <div className="space-y-2">
+                  {Array.from(consultantMissedMap.entries())
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .map(([id, data]) => (
+                      <div key={id} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">{data.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-red-600 font-mono">{data.count}次</span>
+                          <span className="text-xs font-mono font-semibold text-red-700">{formatCurrency(data.amount)}</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {missedCharges.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">患者</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">医生</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">咨询师</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">时段</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">漏收项目</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">金额</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">状态</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {missedCharges.map((record) => (
+                    <MissedChargeRow
+                      key={record.id}
+                      record={record}
+                      onConvertToMessage={handleConvertToMessage}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">该套餐暂无漏收记录</p>
+            </div>
+          )}
         </div>
       )}
     </Modal>
